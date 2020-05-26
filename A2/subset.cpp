@@ -17,7 +17,7 @@
 #include <pthread.h>
 
 std::vector<long> a;
-long counts[32];            //because there are supposed to be 32 threads at most described in the question
+long counts[32] {0};            //because there are supposed to be 32 threads at most described in the question
 
 struct arguments{
     long tid, from, to;
@@ -26,11 +26,11 @@ struct arguments{
 
 //using for debug
 void print_sol(long comb){
-    return ;                //commet to see results
+   //return ;                //commet to see results
 
     for(size_t i = 0; i < a.size(); ++i){
         if(comb & 1)
-            printf("%ld", a[i]);
+            printf("%ld ", a[i]);
         
         comb /= 2;
     }
@@ -43,27 +43,27 @@ void print_sol(long comb){
 void test(long comb, long tid)
 {
     long long sum = 0;
-    long bits = comb;
-    for(size_t i = 0 ; i < a.size() ; i ++ ) {
-        if( bits & 1) // check lowest bit
-        sum += a[i];
-        bits >>= 1; // shift bits to the right
-    }
-    if( sum == 0) {
-        print_sol(comb);
-        ++counts[tid];
-    }
+  long bits = comb;
+  for(size_t i = 0 ; i < a.size() ; i ++ ) {
+    if( bits & 1) // check lowest bit
+      sum += a[i];
+    bits >>= 1; // shift bits to the right
+  }
+  if( sum == 0) {
+    print_sol(comb);
+    counts[tid] ++;
+  }
 
-    return ;
 }
 
 // test all combinations using threads
-void *test_range(void *args)
-{
-    struct arguments *arg = ((struct arguments *) args);
+void *test_range(void *args){
 
+    struct arguments *arg = ((struct arguments *) args);
     for(long i = arg->from; i < arg->to; ++i)
         test(i, arg->tid);
+
+    printf("id: %ld from: %ld to: %ld\n", arg->tid, arg->from, arg->to);
 
     pthread_exit(0);
 }
@@ -111,58 +111,60 @@ int main(int argc, char ** argv){
         isMoreThreads = 1;
     }
 
-    for(int i = 0; i < nThreads; ++i){
+    printf("Step: %ld\n", step);
+    struct arguments args[nThreads];
+    for(long i = 0; i < nThreads; ++i){
+
+        args[i].tid= i;
         if(isMoreThreads){
-            if(i + 2 <= a.size()){
-                struct arguments args{i, i + 1, i + 2};
-
-                if(0 != pthread_create(&threads[i], NULL, test_range, &args)){
-                    printf("Error: pthread_create failed\n");
-                    
-                    return -1;
-                }
+            if((i + 1) * step <= a.size()){
+                // struct arguments args{i, i + 1, i + 2};
+                args[i].from = i * step + 1;
+                args[i].to = (i + 1) * step;
+                
             }
-            //may comment this out
-            /*
+            //may comment this out       
             else{
-                struct arguments args{i, 0, 0};
+                // struct arguments args{i, 0, 0};
 
-                if(0 != pthread_create(&threads[i], NULL, test_range, &args)){
-                    printf("Error: pthread_create failed\n");
-                    
-                    return -1;
-                }
+               args[i].from = 0;
+               args[i].to = 0;
             }
-            */
+            
+            
         }
         else{
             //if it's the last thread
             if(i == nThreads - 1){
-                struct arguments args{i, i * step + 1, long(1) << a.size()};
-             
-                if(0 != pthread_create(&threads[i], NULL, test_range, &args)){
-                printf("Error: pthread_create failed\n");
-                    
-                return -1;
-                }
+                // struct arguments args{i, i * step + 1, long(1) << a.size()};
+                args[i].from = i * step + 1;
+                args[i].to = long(1) << a.size();
+                
             }
             else{
-                struct arguments args{i, i * step + 1, (i + 1) * step};
-             
-                if(0 != pthread_create(&threads[i], NULL, test_range, &args)){
-                printf("Error: pthread_create failed\n");
-                    
-                return -1;
-                }
+                // struct arguments args{i, i * step + 1, (i + 1) * step};
+               args[i].from = i * step + 1;
+               args[i].to = (i + 1) * step;
             }
+            
+        }
+
+        if(0 != pthread_create(&threads[i], NULL, test_range, &args[i])){
+            printf("Error: pthread_create failed\n");
+                    
+            return -1;
         }
     }
-
-    for(long i = 0; i < nThreads; ++i){
-        count += counts[i];
+            printf("more\n");
+    //join all threads
+    for(long i = 0; i < nThreads; ++i)
         pthread_join(threads[i], NULL);
+    
+    //calculate the whole count
+    for(long i = 0; i < nThreads; ++i){
+        count+= counts[i];
+        //printf("count[%ld]: %ld\n", i, counts[i]);
     }
-
     printf("Subsets found: %ld\n", count);
 
     return 0;

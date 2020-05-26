@@ -107,7 +107,7 @@ int main( int argc, char ** argv)
   //
   count = 0;
   test_range(1, long(1) << a.size()); // range = 1 .. 2^N using bitshift
-
+  
   //
   // once you join the threads, you can simply sum up the counters
   // to get the total count

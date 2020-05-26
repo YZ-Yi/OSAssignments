@@ -26,7 +26,7 @@ struct arguments{
 
 //using for debug
 void print_sol(long comb){
-   //return ;                //commet to see results
+   return ;                //commet to see results
 
     for(size_t i = 0; i < a.size(); ++i){
         if(comb & 1)
@@ -62,8 +62,6 @@ void *test_range(void *args){
     struct arguments *arg = ((struct arguments *) args);
     for(long i = arg->from; i < arg->to; ++i)
         test(i, arg->tid);
-
-    printf("id: %ld from: %ld to: %ld\n", arg->tid, arg->from, arg->to);
 
     pthread_exit(0);
 }
@@ -111,16 +109,15 @@ int main(int argc, char ** argv){
         isMoreThreads = 1;
     }
 
-    printf("Step: %ld\n", step);
     struct arguments args[nThreads];
     for(long i = 0; i < nThreads; ++i){
 
         args[i].tid= i;
         if(isMoreThreads){
-            if((i + 1) * step <= a.size()){
+            if(i + 2 <= (long(1) << a.size())){
                 // struct arguments args{i, i + 1, i + 2};
-                args[i].from = i * step + 1;
-                args[i].to = (i + 1) * step;
+                args[i].from = i + 1;
+                args[i].to = i + 2;
                 
             }
             //may comment this out       
@@ -144,7 +141,7 @@ int main(int argc, char ** argv){
             else{
                 // struct arguments args{i, i * step + 1, (i + 1) * step};
                args[i].from = i * step + 1;
-               args[i].to = (i + 1) * step;
+               args[i].to = (i + 1) * step + 1;
             }
             
         }
@@ -155,7 +152,6 @@ int main(int argc, char ** argv){
             return -1;
         }
     }
-            printf("more\n");
     //join all threads
     for(long i = 0; i < nThreads; ++i)
         pthread_join(threads[i], NULL);

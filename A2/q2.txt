@@ -1,0 +1,11 @@
+original real	0m9.625s
+1 real	0m9.678s
+2 real	0m4.861s
+3 real	0m3.315s
+4 real	0m2.458s
+6 real	0m1.692s
+8 real	0m1.311s
+12 real	0m1.315s
+16 real	0m1.302s
+24 real	0m1.281s
+32 real	0m1.266s

@@ -71,7 +71,7 @@ int main( int argc, char ** argv)
     if( ! (std::cin >> num) ) break;
     int64_t div = getSmallestDivisor(num);
     // the line below may help you with debugging
-    // std::cout << "Debug: " << num << " --> " << div << "\n";
+    std::cout << "Debug: " << num << " --> " << div << "\n";
     sum += div;
   }
 

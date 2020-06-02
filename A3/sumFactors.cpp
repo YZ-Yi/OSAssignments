@@ -25,6 +25,7 @@ struct arguments{
 
 int64_t factor;                         //smallest factor for each number
 pthread_mutex_t mutex;
+pthread_barrier_t barr;
 
 void* getSmallestDivisor(void *a){
     struct arguments *arg = ((struct arguments*) a); 
@@ -58,7 +59,8 @@ void* getSmallestDivisor(void *a){
         pthread_exit(0);
     }
 */
-    int64_t i = arg->beg;
+    int res = pthread_barrier_wait(&barr);
+    int64_t i = (int64_t)((arg->beg - 5) / 6 ) * 6 + 5;
     while(i <= arg->max){
         if(arg->num % i == 0){
             if(i < factor){
@@ -83,12 +85,13 @@ void* getSmallestDivisor(void *a){
         i += 6;
     }
 
-    //if it's prime
-    if(factor == (int64_t)sqrt(arg->num) && arg->num % factor != 0){
-        pthread_mutex_lock(&mutex);
-        factor = 0;
-        pthread_mutex_unlock(&mutex);
-    }
+    if(res == PTHREAD_BARRIER_SERIAL_THREAD)
+        //if it's prime
+        if(factor == (int64_t)sqrt(arg->num) && arg->num % factor != 0){
+            pthread_mutex_lock(&mutex);
+            factor = 0;
+            pthread_mutex_unlock(&mutex);
+        }
     
 
     pthread_exit(0);
@@ -115,6 +118,7 @@ int main(int argc, char **argv){
 
     pthread_t threads[nThreads];
     struct arguments args[nThreads];
+    pthread_barrier_init(&barr, NULL, nThreads);
     int64_t sum = 0;
 
     while(1){
@@ -187,7 +191,7 @@ int main(int argc, char **argv){
 
                 pthread_create(&threads[i], NULL, getSmallestDivisor, &args[i]);
             }
-
+  
             for(int64_t i = 0; i < nThreads; ++i)
                 pthread_join(threads[i], NULL);
         }
@@ -207,7 +211,7 @@ int main(int argc, char **argv){
 
 
 
-
+ 
 
 
 

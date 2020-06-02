@@ -14,6 +14,7 @@
 #include <cassert>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -78,8 +79,8 @@ int main(void){
         return -1;
     }
 
-    int noDig = 0;
-    vector<results> r;
+    // int noDig = 0;
+    vector<results> r, noDigest;
 
     for(int i = 0; i < fnames.size(); ++i){
         results temp;
@@ -89,10 +90,11 @@ int main(void){
 
         if(temp.dig.empty()){
             temp.matchNum = -1;                 //cannot get digest
+            noDigest.push_back(temp);
             ++noDig;
         }
-
-        r.push_back(temp);
+        else
+            r.push_back(temp);
     }
 
     int matches = 0;

@@ -20,12 +20,13 @@
 using namespace std;
 
 struct arguments{
-    int64_t num, beg, max;
+    int64_t num, beg, max, tid;
 };
 
 int64_t factor;                         //smallest factor for each number
 pthread_mutex_t mutex;
 pthread_barrier_t barr;
+int64_t min_num;                        //current threads number for the  minimum div
 
 void* getSmallestDivisor(void *a){
     struct arguments *arg = ((struct arguments*) a); 
@@ -59,13 +60,19 @@ void* getSmallestDivisor(void *a){
         pthread_exit(0);
     }
 */
-    int res = pthread_barrier_wait(&barr);
-    int64_t i = (int64_t)((arg->beg - 5) / 6 ) * 6 + 5;
+    // int res = pthread_barrier_wait(&barr);
+    int64_t i = (int64_t)((arg->beg - 5) / 6) * 6 + 5;
+
     while(i <= arg->max){
+        //if find div in thread with smaller numbers
+        if(arg->tid > min_num)
+            pthread_exit(0);
+
         if(arg->num % i == 0){
             if(i < factor){
                 pthread_mutex_lock(&mutex);
                 factor = i;
+                min_num = arg->tid;
                 pthread_mutex_unlock(&mutex);
             }
 
@@ -76,6 +83,7 @@ void* getSmallestDivisor(void *a){
             if(i + 2 < factor){
                 pthread_mutex_lock(&mutex);
                 factor = i + 2;
+                min_num = arg->tid;
                 pthread_mutex_unlock(&mutex);
             }
 
@@ -85,13 +93,14 @@ void* getSmallestDivisor(void *a){
         i += 6;
     }
 
-    if(res == PTHREAD_BARRIER_SERIAL_THREAD)
+    //if(res == PTHREAD_BARRIER_SERIAL_THREAD)
         //if it's prime
         if(factor == (int64_t)sqrt(arg->num) && arg->num % factor != 0){
             pthread_mutex_lock(&mutex);
             factor = 0;
+            min_num = arg->tid;
             pthread_mutex_unlock(&mutex);
-        }
+        //}
     
 
     pthread_exit(0);
@@ -175,16 +184,18 @@ int main(int argc, char **argv){
             if(step <= 1)
                 step = 1;
             max = step;
-            
+            min_num = nThreads;
+
             for(int64_t i = 0; i < nThreads; ++i){
                 if(max >= (int)sqrt(num))
                     max = sqrt(num);
-                if(i == nThreads)
+                if(i == nThreads - 1)
                     max = sqrt(num);
                 
                 args[i].num = num;
                 args[i].beg = beg;
                 args[i].max = max;
+                args[i].tid = i;
 
                 beg += step;
                 max += step;

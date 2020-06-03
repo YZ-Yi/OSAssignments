@@ -28,6 +28,19 @@ pthread_mutex_t mutex;
 pthread_barrier_t barr;
 int64_t min_num;                        //current threads number for the  minimum div
 
+void *isSquered(void *a){
+    struct arguments *arg = ((struct arguments*) a); 
+
+    if(factor == (int64_t)sqrt(arg->num) && arg->num % factor != 0){
+        pthread_mutex_lock(&mutex);
+        factor = 0;
+        min_num = arg->tid;
+        pthread_mutex_unlock(&mutex);
+    }
+
+    pthread_exit(0);
+}
+
 void* getSmallestDivisor(void *a){
     struct arguments *arg = ((struct arguments*) a); 
 /*
@@ -60,54 +73,50 @@ void* getSmallestDivisor(void *a){
         pthread_exit(0);
     }
 */
-    // int res = pthread_barrier_wait(&barr);
-    int64_t i = (int64_t)((arg->beg - 5) / 6) * 6 + 5;
+    int64_t i = arg->beg;
+    // int64_t i = (int64_t)((arg->beg - 5) / 6) * 6 + 5;
 
     while(i <= arg->max){
         //if find div in thread with smaller numbers
         if(arg->tid > min_num)
-            pthread_exit(0);
+            break;
 
         if(arg->num % i == 0){
-            if(i < factor){
+            if(i < factor && arg->tid <= min_num){
                 pthread_mutex_lock(&mutex);
                 factor = i;
                 min_num = arg->tid;
                 pthread_mutex_unlock(&mutex);
             }
 
-            pthread_exit(0);
+            break;
         }  
 
         if(arg->num % (i + 2) == 0){
-            if(i + 2 < factor){
+            if(i + 2 < factor && arg->tid <= min_num){
                 pthread_mutex_lock(&mutex);
                 factor = i + 2;
                 min_num = arg->tid;
                 pthread_mutex_unlock(&mutex);
             }
 
-            pthread_exit(0);
+            break;
         }  
 
         i += 6;
     }
 
-    //if(res == PTHREAD_BARRIER_SERIAL_THREAD)
-        //if it's prime
-        if(factor == (int64_t)sqrt(arg->num) && arg->num % factor != 0){
-            pthread_mutex_lock(&mutex);
-            factor = 0;
-            min_num = arg->tid;
-            pthread_mutex_unlock(&mutex);
-        //}
-    
+    //waiting for all threads then to check if it's prime or squere
+    pthread_barrier_wait(&barr);
+    isSquered(a);
+        
 
     pthread_exit(0);
+
 }
 
 int main(int argc, char **argv){
-    int nThreads  = 1;
+    int64_t nThreads  = 1;
 
     //invalid arguments
     if(argc != 1 && argc != 2){
@@ -127,7 +136,6 @@ int main(int argc, char **argv){
 
     pthread_t threads[nThreads];
     struct arguments args[nThreads];
-    pthread_barrier_init(&barr, NULL, nThreads);
     int64_t sum = 0;
 
     while(1){
@@ -178,16 +186,18 @@ int main(int argc, char **argv){
         else if (num % 3 == 0)
             factor = 3;
         else{
+            pthread_barrier_init(&barr, NULL, nThreads);
+
             int64_t beg = 5;
             int64_t max = sqrt(num);
-            int64_t step = max / nThreads;
-            if(step <= 1)
-                step = 1;
+            int64_t step = (int64_t)((int64_t)(max / nThreads) / 6) * 6;
+            if(step <= 6)
+                step = 6;
             max = step;
             min_num = nThreads;
 
             for(int64_t i = 0; i < nThreads; ++i){
-                if(max >= (int)sqrt(num))
+                if(max >= (int64_t)sqrt(num))
                     max = sqrt(num);
                 if(i == nThreads - 1)
                     max = sqrt(num);
@@ -202,12 +212,14 @@ int main(int argc, char **argv){
 
                 pthread_create(&threads[i], NULL, getSmallestDivisor, &args[i]);
             }
-  
             for(int64_t i = 0; i < nThreads; ++i)
                 pthread_join(threads[i], NULL);
+
+            pthread_barrier_destroy(&barr);
         }
 
-        cout << "Num: " << num << " Div: " << factor << endl; 
+        // debug message
+        //cout << "Num: " << num << " Div: " << factor << endl; 
         sum += factor;
     }
 

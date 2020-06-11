@@ -155,13 +155,14 @@ struct Graph {
 	}
 
 	// run cycle detection
-	bool
-	deadlock() {
+	bool deadlock() {
         vector<string> nonout_nodes;                    //node has 0 out edge
         auto out_edges = out_counts;                    //copy from out_counts
-    
+		auto nodes = all_nodes;
+
+
         //check the graph if there are any 0 out nodes
-        for(auto &n : all_nodes)
+        for(auto &n : nodes)
             if(out_edges[n] == 0)
                 nonout_nodes.push_back(n);
 
@@ -175,12 +176,16 @@ struct Graph {
                 if(out_edges[n] == 0)
                     nonout_nodes.push_back(n);
             }
+
+			nodes.erase(node);
         }
 
-        for(auto &n : all_nodes)
-            if(out_edges[n] != 0)
-                if(n[0] == 'p')
-                    deadloc_pro.push_back(n);
+        for(auto &n : nodes)
+            if(n[0] == 'p')
+                deadloc_pro.push_back(n);
+
+		if(!deadloc_pro.empty())
+			return true;
 
 		return false;
 	}

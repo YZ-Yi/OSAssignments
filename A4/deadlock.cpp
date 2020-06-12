@@ -17,17 +17,11 @@
 #include <unordered_map>
 #include <set>
 #include <list>
+#include <array>
+
 
 using namespace std;
 
-#include <stdio.h>
-#include <ctype.h>
-#include <vector>
-#include <string>
-#include <cassert>
-#include <unordered_map>
-#include <set>
-#include <list>
 
 typedef std::vector<std::string> vs_t;
 
@@ -134,59 +128,61 @@ struct Graph {
 	// ...
 
 	//  std::unordered_map<std::string, vs_t> adj_list;
-	std::unordered_map<std::string, std::list<std::string>> adj_list;
-	std::unordered_map<std::string, int> out_counts;
+	Word2Int w2i;
+	// vector<list<int>> adj_list;
+	// vector<int> out_counts;
+	array<list<int>, 10000> adj_list;
+	array<int, 10000> out_counts {0};
+	// std::unordered_map<std::string, std::list<std::string>> adj_list;
+	// std::unordered_map<std::string, int> out_counts;
 	std::set<std::string> all_nodes;
     vector<string> deadloc_pro;
     string cur_line;
 
 	Graph() {
-		// reimplement this (probably)
+
 	}
 
 	// add edge n1 -> n2
-	void
-	add( std::string n1 , std::string n2) {
-		// reimplement this
+	void add( std::string n1 , std::string n2) {
+		int node1, node2;
+		node1 = w2i.get(n1);
+		node2 = w2i.get(n2);
 		all_nodes.insert(n1);
 		all_nodes.insert(n2);
-		adj_list[n2].push_back(n1);
-		out_counts[n1] ++;
+		adj_list[node2].push_back(node1);
+		out_counts[node1]++;
 	}
 
 	// run cycle detection
 	bool deadlock() {
-        vector<string> nonout_nodes;                    //node has 0 out edge
-        auto out_edges = out_counts;                    //copy from out_counts
-		auto nodes = all_nodes;
+		
+		auto out_edges = out_counts;
+		vector<int> nonout_nodes;
+	
+		for(auto &n : all_nodes)
+			if(out_edges[w2i.get(n)] == 0)
+				nonout_nodes.push_back(w2i.get(n));
+		
+		while(!nonout_nodes.empty()){
+			int node = nonout_nodes.back();
+			nonout_nodes.pop_back();
+			for(auto &n : adj_list[node]){
+				--out_edges[n];
 
+				if(out_edges[n] == 0)
+					nonout_nodes.push_back(n);
+			}
+		}
 
-        //check the graph if there are any 0 out nodes
-        for(auto &n : nodes)
-            if(out_edges[n] == 0)
-                nonout_nodes.push_back(n);
-
-        while(!nonout_nodes.empty()){
-            string node = nonout_nodes.back();
-            nonout_nodes.pop_back();
-
-            for(auto &n : adj_list[node]){
-                --out_edges[n];
-
-                if(out_edges[n] == 0)
-                    nonout_nodes.push_back(n);
-            }
-
-			nodes.erase(node);
-        }
-
-        for(auto &n : nodes)
-            if(n[0] == 'p')
-                deadloc_pro.push_back(n);
-
+		for(const auto &n : all_nodes)
+			if(out_edges[w2i.get(n)] >=  1)
+				if(n[0] == 'p')
+					deadloc_pro.push_back(n);
+		
 		if(!deadloc_pro.empty())
 			return true;
-
+		
 		return false;
 	}
 

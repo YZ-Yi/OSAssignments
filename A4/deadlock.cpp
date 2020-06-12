@@ -188,27 +188,6 @@ struct Graph {
 
 	// report cycle
 	void report() {
-        /*
-		// reimplement this
-		printf("Not sure if there is deadlock...\n"
-					 "but the outdegrees + adjacency list (reversed) looks like this:\n");
-
-		for( const std::string & n : all_nodes) {
-			printf("%10s (%2d) : ", n.c_str(), out_counts[n]);
-			for( const auto & s : adj_list[n]) {
-				printf("%s , ", s.c_str());
-			}
-			printf("\n");
-		}
-
-		// list of nodes with no outgoing arrows:
-		printf("Nodes without outgoing edges... these are not waiting on anything..\n");
-		for( const auto & e : out_counts) {
-			if( e.second == 0)
-				printf(" %s ,", e.first.c_str());
-		}
-		printf("\n");
-        */
         if(!deadloc_pro.empty()){
             printf("Deadlock on edge: %s\n", cur_line.c_str());
             printf("Deadlocked processes: ");

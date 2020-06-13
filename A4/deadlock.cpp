@@ -107,7 +107,7 @@ parseLine( std::string & proc_name, std::string & res_name, Edge & etype)
 // than hash tables... if you don't know what that means,
 // safely ignore this hint :)
 struct Word2Int {
-	int
+	long
 	get(const std::string & w) {
 		auto f = myset.find(w);
 		if( f == myset.end()) {
@@ -118,8 +118,8 @@ struct Word2Int {
 		return f-> second;
 	}
  private:
-	int counter = 0;
-	std::unordered_map<std::string,int> myset;
+	long counter = 0;
+	std::unordered_map<std::string,long> myset;
 };
 
 struct Graph {
@@ -131,21 +131,23 @@ struct Graph {
 	Word2Int w2i;
 	// vector<list<int>> adj_list;
 	// vector<int> out_counts;
-	array<list<int>, 10000> adj_list;
-	array<int, 10000> out_counts {0};
+	array<list<long>, 20000> adj_list;
+	array<long, 20000> out_counts {0};
+	// vector<list<long>> adj_list;
+	// vector<long> out_counts;
 	// std::unordered_map<std::string, std::list<std::string>> adj_list;
 	// std::unordered_map<std::string, int> out_counts;
 	std::set<std::string> all_nodes;
     vector<string> deadloc_pro;
     string cur_line;
 
-	Graph() {
+	// Graph() : adj_list(20000), out_counts(20000) {};
+	Graph(){
 
 	}
-
 	// add edge n1 -> n2
 	void add( std::string n1 , std::string n2) {
-		int node1, node2;
+		long node1, node2;
 		node1 = w2i.get(n1);
 		node2 = w2i.get(n2);
 		all_nodes.insert(n1);
@@ -155,17 +157,16 @@ struct Graph {
 	}
 
 	// run cycle detection
-	bool deadlock() {
-		
+	bool deadlock() {	
 		auto out_edges = out_counts;
-		vector<int> nonout_nodes;
+		vector<long> nonout_nodes;
 	
 		for(auto &n : all_nodes)
 			if(out_edges[w2i.get(n)] == 0)
 				nonout_nodes.push_back(w2i.get(n));
 		
 		while(!nonout_nodes.empty()){
-			int node = nonout_nodes.back();
+			long node = nonout_nodes.back();
 			nonout_nodes.pop_back();
 			for(auto &n : adj_list[node]){
 				--out_edges[n];
@@ -192,7 +193,7 @@ struct Graph {
             printf("Deadlock on edge: %s\n", cur_line.c_str());
             printf("Deadlocked processes: ");
 
-            for(int i = 0; i < deadloc_pro.size(); ++i){
+            for(long i = 0; i < deadloc_pro.size(); ++i){
                 if(i == deadloc_pro.size() - 1)
                     printf("%s\n", &((deadloc_pro[i].c_str())[2]));
                 else
@@ -212,7 +213,6 @@ main()
 {
 
 	Graph g;
-
 	while(true) {
 		std::string pname, rname;
 		Edge e;
@@ -226,7 +226,7 @@ main()
 			g.add( "r_" + rname, "p_" + pname);
             g.cur_line = pname + " <- " + rname;
         }
-		if( g.deadlock()) break;
+		if( g.deadlock()) break;	
 	}
 
 	g.report();

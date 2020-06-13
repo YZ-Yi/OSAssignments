@@ -128,8 +128,7 @@ void shortestJobFirst(const vector<Process> &p){
         //if a new process is arriving
         if(p[i].arrival <= current && i < p.size()){
             jobs.push(p[i++]);
-
-            continue;
+            continue;   
         }
 
         //if cpu is idel and RQ not empty
@@ -143,7 +142,8 @@ void shortestJobFirst(const vector<Process> &p){
         
         //execute one burst of the job on cpu
         if(cpu){
-            --cur_job.burst;
+            current += cur_job.burst;
+            cur_job.burst = 0;
             ideling = 0;
         }
         else{
@@ -151,9 +151,10 @@ void shortestJobFirst(const vector<Process> &p){
                 cout << "- ";
                 ideling = 1;
             }
+            if(i < p.size())
+                current = p[i].arrival;
         }
 
-        ++current;
     }
 
     cout << endl;

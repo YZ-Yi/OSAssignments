@@ -26,7 +26,7 @@ struct Process{
     }
 };
 
-void roundRobin(vector<Process> p, int slice){
+void roundRobin(vector<Process> p, long slice){
     queue<Process> jobs;
     int remaining = p.size();
     int idealing = 0;
@@ -85,18 +85,33 @@ void roundRobin(vector<Process> p, int slice){
 
         //execute one burst of job on cpu
         if(cpu){
-            --cur_job.burst;
-            ++time;
+            if(cur_job.burst < slice){
+                current += cur_job.burst;
+                cur_job.burst = 0;
+            }
+            else{
+                cur_job.burst -= slice;
+                current += slice;
+                time = slice;
+            }
             idealing = 0;
         }
         else{
             if(idealing == 0){
                 cout << "- ";
-                idealing = 1; 
+                idealing = 1;
+
+            }
+
+            if(!jobs.empty())
+                current = jobs.front().arrival;
+            else{
+                if(i < p.size())
+                    current = p[i].arrival;
             }
         }
 
-        ++current;
+        // ++current;
     }
 
     cout << endl;
@@ -175,7 +190,7 @@ int main(int agrv, char **agrc){
     long slice = -1;
     
     if(agrv > 3){
-        if(atoi(agrc[3]) > 0)
+        if(atol(agrc[3]) > 0)
             slice = atol(agrc[3]);
         else
         {

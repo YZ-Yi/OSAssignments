@@ -118,6 +118,7 @@ struct Word2Int {
 		}
 		return f-> second;
 	}
+
  private:
 	long counter = 0;
 	std::unordered_map<std::string,long> myset;
@@ -144,7 +145,7 @@ struct Graph {
 
 	// Graph() : adj_list(20000), out_counts(20000) {};
 	Graph(){
-                deadlock_pro.reserve(100000);
+        deadlock_pro.reserve(100000);
 	}
 	// add edge n1 -> n2
 	void add( std::string n1 , std::string n2) {

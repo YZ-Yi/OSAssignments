@@ -138,12 +138,12 @@ struct Graph {
 	// std::unordered_map<std::string, std::list<std::string>> adj_list;
 	// std::unordered_map<std::string, int> out_counts;
 	std::set<std::string> all_nodes;
-    vector<string> deadloc_pro;
-    string cur_line;
+        vector<string> deadloc_pro;
+        string cur_line;
 
 	// Graph() : adj_list(20000), out_counts(20000) {};
 	Graph(){
-
+                deadlock_pro.reserve(100000);
 	}
 	// add edge n1 -> n2
 	void add( std::string n1 , std::string n2) {
@@ -160,6 +160,7 @@ struct Graph {
 	bool deadlock() {	
 		auto out_edges = out_counts;
 		vector<long> nonout_nodes;
+		nonout_nodes.reserve(100000);
 	
 		for(auto &n : all_nodes)
 			if(out_edges[w2i.get(n)] == 0)

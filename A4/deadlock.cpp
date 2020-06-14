@@ -36,6 +36,7 @@ split( const std::string & p_line)
 {
 	auto line = p_line + " ";
 	vs_t res;
+	res.reserve(100000);
 	bool in_str = false;
 	std::string curr_word = "";
 	for( auto c : line) {
@@ -131,15 +132,15 @@ struct Graph {
 	Word2Int w2i;
 	// vector<list<int>> adj_list;
 	// vector<int> out_counts;
-	array<list<long>, 20000> adj_list;
-	array<long, 20000> out_counts {0};
+	array<list<long>, 100000> adj_list;
+	array<long, 100000> out_counts {0};
 	// vector<list<long>> adj_list;
 	// vector<long> out_counts;
 	// std::unordered_map<std::string, std::list<std::string>> adj_list;
 	// std::unordered_map<std::string, int> out_counts;
-	std::set<std::string> all_nodes;
-        vector<string> deadloc_pro;
-        string cur_line;
+	set<std::string> all_nodes;
+    vector<string> deadlock_pro;
+    string cur_line;
 
 	// Graph() : adj_list(20000), out_counts(20000) {};
 	Graph(){
@@ -180,9 +181,9 @@ struct Graph {
 		for(const auto &n : all_nodes)
 			if(out_edges[w2i.get(n)] >=  1)
 				if(n[0] == 'p')
-					deadloc_pro.push_back(n);
+					deadlock_pro.push_back(n);
 		
-		if(!deadloc_pro.empty())
+		if(!deadlock_pro.empty())
 			return true;
 		
 		return false;
@@ -190,15 +191,15 @@ struct Graph {
 
 	// report cycle
 	void report() {
-        if(!deadloc_pro.empty()){
+        if(!deadlock_pro.empty()){
             printf("Deadlock on edge: %s\n", cur_line.c_str());
             printf("Deadlocked processes: ");
 
-            for(long i = 0; i < deadloc_pro.size(); ++i){
-                if(i == deadloc_pro.size() - 1)
-                    printf("%s\n", &((deadloc_pro[i].c_str())[2]));
+            for(long i = 0; i < deadlock_pro.size(); ++i){
+                if(i == deadlock_pro.size() - 1)
+                    printf("%s\n", &((deadlock_pro[i].c_str())[2]));
                 else
-                    printf("%s, ", &((deadloc_pro[i].c_str())[2]));
+                    printf("%s, ", &((deadlock_pro[i].c_str())[2]));
             }
 
             return ;

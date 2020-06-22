@@ -15,11 +15,12 @@
 #include <list>
 #include <iostream>
 #include <iterator>
+#include <set>
+#include <unordered_map>
 
 using namespace std;
 
 typedef vector<string> vs_t;
-
 // split string p_line into a vector of strings (words)
 // the delimiters are 1 or more whitespaces
 vs_t split( const string & p_line){
@@ -107,106 +108,150 @@ bool parse_line( long & n1, long & n2){
 
 struct chunk{
 	long tag, size;
+	int64_t addr;
 	
-	chunk(long tag, long size) : tag(-1), size(size) {} 
+	chunk(long tag, long size, int16_t addr) : tag(tag), size(size), addr(addr) {} 
 };
+
+typedef list<chunk>::iterator ChunkRef;
+
+struct scmp {
+  bool operator()( const ChunkRef & c1, const ChunkRef & c2) const {
+    if( c1-> size == c2-> size)
+      return c1-> addr < c2-> addr;
+    else
+      return c1-> size < c2-> size;
+  }
+};
+
 
 // all you need to do is to fill in the implementation of MemSim class
 struct MemSim {
 	// initializes the memory simulator with a page size
 	MemSim(long size){
-		chunks.push_front(chunk(-1, size));
+		// chunks.push_front(chunk(-1, size));
 		page_size = size;
 	}
 
 	// frees all blocks with the given tag and merges adjecent free blocks
 	void free( long tag) {
-		list<chunk>::iterator node = chunks.begin();
-		while(node != chunks.end()){
-			if(node->tag == tag)
-				node->tag = -1;
-			
-			if(node->tag == -1)
-				if(node != chunks.begin()){
-					auto pre = prev(node);
-					
-					//merge 2 adjacent emtpty chunks
-					if(pre->tag == -1){
-						node->size += pre->size;
-						chunks.erase(pre);
-					}
+		// cout << "Free tag " << tag << endl;
+		
+		for(auto it = tagged_blocks[tag].begin(); it != tagged_blocks[tag].end();){
+			(*it)->tag = -1;
+
+			if((*it) != chunks.begin()){
+				// cout << "Addr " << (*it)->addr << endl;
+				auto pre = prev(*it);
+				// cout << pre->tag << " " << pre->size << " " << pre->addr << endl;
+				if(pre->tag == -1){
+
+					(*it)->addr = pre->addr;
+					(*it)->size += pre->size;
+					free_blocks.erase(pre);
+					chunks.erase(pre);
 				}
-			++node;
+			}
+			if(*it != chunks.end()){
+				auto ne = next(*it);
+				if(ne->tag == -1){
+					(*it)->size += ne->size;
+					free_blocks.erase(ne);
+					chunks.erase(ne);
+				}
+			}
+			free_blocks.insert(*it);
+			++it;
 		}
 
+		tagged_blocks.erase(tag);
+		
 	}
 	
 	// allocates a chunk using best-fit
 	// if no suitable chunk found, requests new page(s)
 	void alloc( long tag, long size) {
-		list<chunk>::iterator min = chunks.end();
-		list<chunk>::iterator last = chunks.end();
-		list<chunk>::iterator node = chunks.begin();
+
+		// cout << "Add tag: " << tag << " size: " << size << endl; 
+
+		//request the first page
+		if(chunks.empty()){
+			chunks.push_front(chunk(-1, page_size, 0));
+			++request;
+			free_blocks.insert(chunks.begin());
+		}
+
+		list<chunk> dummy  {chunk(-1, size, 0)};
+		auto sbesti = free_blocks.lower_bound(dummy.begin());
+		ChunkRef best = chunks.end();
+		// cout << "Free:";
+		if(sbesti != free_blocks.end()){
+			best = *sbesti;
+		// cout << "Sbesti: " << (*sbesti)->size << " " << (*sbesti)->tag << " "<< (*sbesti)->addr << endl;
 		
-
-		while(node != chunks.end()){
-			if(node->tag == -1){
-				if(node->size == size){
-					node->tag = tag;
-
-					return ;
-				}
-
-				if(node->size > size){
-					if(min == chunks.end())
-						min = node;
-					else if(min->size > node->size)
-						min = node;
-				}
-
-				last = node;
-			}
-			
-			++node;
 		}
 
-		if(min != chunks.end()){
-			chunk c(-1, min->size - size);
-			min->tag = tag;
-			min->size = size;
-			auto i = min;
-			if(++i != chunks.end()){
-				chunks.insert(++min, c);
-			}
-			else
-				chunks.push_back(c);
-		}
-		else{
-			if(last != chunks.end()){
-				last->tag = tag;
-				size -= last->size;
+		//request new page
+		if(best == chunks.end()){
+			if(!free_blocks.empty()){
+				auto last_chunk = *(--free_blocks.end());
+				size -= last_chunk->size;
+				last_chunk->tag = tag;
+				free_blocks.erase(last_chunk);
+				tagged_blocks[tag].push_back(last_chunk);
 			}
 
-			//request new pages
 			while(size > 0){
-				chunk page(-1, page_size);
+				chunk page(-1, page_size, chunks.back().addr + chunks.back().addr);
 				++request;
 
 				if(size >= page_size){
 					page.tag = tag;
 					chunks.push_back(page);
 					size -= page_size;
+					tagged_blocks[tag].push_back(--chunks.end());
 				}
 				else{
-					chunk new_chunk(-1, page_size - size);
 					page.tag = tag;
 					page.size = size;
 					chunks.push_back(page);
+					tagged_blocks[tag].push_back(--chunks.end());
+
+					chunk new_chunk(-1, page_size - size, chunks.back().addr + chunks.back().addr);
 					chunks.push_back(new_chunk);
+					free_blocks.insert(--chunks.end());
+
 					size = 0;
 				}
 			}
 		}
+		else{
+			best->tag = tag;
+			if(best->size > size){
+				chunk new_chunk(-1, best->size - size, best->addr + size);
+				free_blocks.erase(sbesti);
+				best->size = size;
+				tagged_blocks[tag].push_back(best);
+				auto i = best;
+				if(++i != chunks.end()){
+					chunks.insert(++best, new_chunk);
+					free_blocks.insert(--best);
+				}
+				else{
+					chunks.push_back(new_chunk);
+					free_blocks.insert(--chunks.end());
+				}
+			}
+			else{
+				free_blocks.erase(sbesti);
+				tagged_blocks[tag].push_back(best);
+			}
+		}
+
+		ChunkRef c = chunks.begin();
+
+
+		
 	}
 	
 	// returns statistics about the simulation
@@ -215,22 +260,20 @@ struct MemSim {
 	void get_report( long & n_req, long & largest) {
 		n_req = request;
 		largest = 0;
-		list<chunk>::iterator node = chunks.begin();
-		list<chunk>::iterator i = chunks.begin();
-
-		while(node != chunks.end()){
-			if(node->tag == -1)
-				if(node->size > largest)
-					largest = node->size;
-			
-			++node;
+		for(auto &node : free_blocks){
+			if(node->size > largest)
+				largest = node->size;
+			// cout << "size:" << node->size << endl;
 		}
+			
 	}
 
  private:
 	list<chunk> chunks;
+	set<ChunkRef, scmp> free_blocks;
+	unordered_map<long, vector<ChunkRef>> tagged_blocks;
 	long page_size;
-	long request = 1	;
+	long request = 0;
 };
 
 int main(int argc, char **argv) {

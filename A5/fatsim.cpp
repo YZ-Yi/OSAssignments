@@ -79,7 +79,6 @@ fatsim(
 
 	//for each block pointing to -1
 	for(auto &i : fat_table[0]){
-		cout << "end block: " << i << endl;
 		length[i] = 1;
 		DFS(fat, fat_table, i, visited, length);
 	}

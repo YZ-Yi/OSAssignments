@@ -171,7 +171,11 @@ struct MemSim {
 	// allocates a chunk using best-fit
 	// if no suitable chunk found, requests new page(s)
 	void alloc( long tag, long size) {
+		cout <<"Alloctate " << tag << endl;
+		cout << "Free chunks:\n";
 
+		for(auto &n : free_blocks)
+			cout << n->addr << " " << n->size << endl;
 		// cout << "Add tag: " << tag << " size: " << size << endl; 
 
 		//request the first page

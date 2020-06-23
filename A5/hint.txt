@@ -1,0 +1,60 @@
+If you use only basic data structures, such as dynamic arrays or linked lists, you will likely end up with an O(n^2) algorithm. This is going to make your program very slow for many large inputs, and you won't be able to get full marks (up to about 80%).
+
+To get full marks, you will need to spend a lot more time redesigning your code with smarter data structures. I personally used:
+
+a linked list to maintain all partitions (to make splitting and merging of blocks constant time operation),
+std::set (which is essentially a balanced binary tree) to keep track of free blocks, sorted by size
+the data I store here are just pointers to the linked list nodes
+tree is sorted by size (primary key), and starting address of block (secondary key), to make sure I pick the 'first' available block
+hash table of lists to store all partitions belonging to the same tag
+the data I store here are just pointers to the linked list nodes
+This allows me to process every request in log(n) worst case time. Here are some relevant parts of my code:
+
+struct Chunk {
+  long tag = -1;
+  long size = 0;
+  int64_t addr = 0;
+};
+
+typedef std::list<Chunk>::iterator ChunkRef;
+struct scmp {
+  bool operator()( const ChunkRef & c1, const ChunkRef & c2) const {
+    if( c1-> size == c2-> size)
+      return c1-> addr < c2-> addr;
+    else
+      return c1-> size < c2-> size;
+  }
+};
+
+struct MemSim {
+  std::set<ChunkRef,scmp> free_blocks; // sorted chunks by size/address
+  std::unordered_map<long, std::vector<ChunkRef>> tagged_blocks; // quick access to all tagged chunks
+  std::list<Chunk> chunks; // all chunks (so that I can get std::prev() and std::next() nodes
+ ...
+};
+
+You will probably also want to use:
+
+http://www.cplusplus.com/reference/set/set/lower_bound/
+
+to lookup the best match. The easiest way I found to use it was to create a dummy linked list with just one element so that I can get an iterator out of it...:
+
+      std::list<Chunk> dummy { Chunk(-1,size,0) };
+      auto sbesti = free_blocks.lower_bound( dummy.begin());
+      ChunkRef best_free_block_iter = chunks.end();
+      if( sbesti != free_blocks.end())
+         best_free_block_iter = * sbesti;
+      if( best_free_block_iter == chunks.end())
+         ... need to allocate more memory
+Chunk address
+The chunk.addr represents the starting address of the block of memory that the chunk represents.
+
+If you have chunks in a linked list, eg. in a container std::list<Chunk>, then if cptr is an iterator to a Chunk, you can calculate its address as:
+
+cptr-> addr = std::prev(cptr)-> addr + std::prev(cptr)-> size;
+
+In other words the address of the chunk is the sum of the previous chunk's address and the previous chunk's size. Except the very first chunk, which I think it makes sense to set its address to 0 (actually any number would work if you didn't have to worry about integer overflow).
+
+chunk address calculation  
+
+And the reason you need them is because of the requirement that the best fit should choose the first chunk in the list in case of ties. That means you need to sort your balanced binary tree by size, but in case of ties you sort by address (secondary key).

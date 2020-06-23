@@ -152,7 +152,7 @@ struct MemSim {
 					chunks.erase(pre);
 				}
 			}
-			if(*it != chunks.end()){
+			if(*it != --chunks.end()){
 				auto ne = next(*it);
 				if(ne->tag == -1){
 					(*it)->size += ne->size;
@@ -202,7 +202,7 @@ struct MemSim {
 			}
 
 			while(size > 0){
-				chunk page(-1, page_size, chunks.back().addr + chunks.back().addr);
+				chunk page(-1, page_size, chunks.back().addr + chunks.back().size);
 				++request;
 
 				if(size >= page_size){
@@ -217,7 +217,7 @@ struct MemSim {
 					chunks.push_back(page);
 					tagged_blocks[tag].push_back(--chunks.end());
 
-					chunk new_chunk(-1, page_size - size, chunks.back().addr + chunks.back().addr);
+					chunk new_chunk(-1, page_size - size, chunks.back().addr + chunks.back().size);
 					chunks.push_back(new_chunk);
 					free_blocks.insert(--chunks.end());
 
@@ -232,24 +232,14 @@ struct MemSim {
 				free_blocks.erase(sbesti);
 				best->size = size;
 				tagged_blocks[tag].push_back(best);
-				auto i = best;
-				if(++i != chunks.end()){
-					chunks.insert(++best, new_chunk);
-					free_blocks.insert(--best);
-				}
-				else{
-					chunks.push_back(new_chunk);
-					free_blocks.insert(--chunks.end());
-				}
+				chunks.insert(next(best), new_chunk);
+				free_blocks.insert(next(best));
 			}
 			else{
 				free_blocks.erase(sbesti);
 				tagged_blocks[tag].push_back(best);
 			}
 		}
-
-		ChunkRef c = chunks.begin();
-
 
 		
 	}
@@ -265,7 +255,11 @@ struct MemSim {
 				largest = node->size;
 			// cout << "size:" << node->size << endl;
 		}
-			
+
+		for(auto &n : chunks)
+			cout << n.tag << " " << n.addr << " " << n.size << "->";
+
+		cout << endl;	
 	}
 
  private:
